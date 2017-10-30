@@ -22,14 +22,13 @@
 
 package edu.umich.si.inteco.minuku.streamgenerator;
 
-import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 
+import com.firebase.client.Firebase;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -40,20 +39,28 @@ import com.google.common.util.concurrent.AtomicDouble;
 
 import org.greenrobot.eventbus.EventBus;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import edu.umich.si.inteco.minuku.config.Constants;
-import edu.umich.si.inteco.minuku.dao.LocationDataRecordDAO;
+import edu.umich.si.inteco.minuku.config.UserPreferences;
 import edu.umich.si.inteco.minuku.event.DecrementLoadingProcessCountEvent;
 import edu.umich.si.inteco.minuku.event.IncrementLoadingProcessCountEvent;
 import edu.umich.si.inteco.minuku.logger.Log;
 import edu.umich.si.inteco.minuku.manager.MinukuDAOManager;
 import edu.umich.si.inteco.minuku.manager.MinukuStreamManager;
 import edu.umich.si.inteco.minuku.model.LocationDataRecord;
-import edu.umich.si.inteco.minuku.model.MoodDataRecord;
 import edu.umich.si.inteco.minuku.stream.LocationStream;
 import edu.umich.si.inteco.minukucore.dao.DAO;
 import edu.umich.si.inteco.minukucore.dao.DAOException;
@@ -61,6 +68,7 @@ import edu.umich.si.inteco.minukucore.event.StateChangeEvent;
 import edu.umich.si.inteco.minukucore.exception.StreamAlreadyExistsException;
 import edu.umich.si.inteco.minukucore.exception.StreamNotFoundException;
 import edu.umich.si.inteco.minukucore.stream.Stream;
+import com.firebase.client.ServerValue;
 
 /**
  * Created by neerajkumar on 7/18/16.
@@ -78,6 +86,9 @@ public class LocationStreamGenerator extends AndroidStreamGenerator<LocationData
 
     private AtomicDouble latitude;
     private AtomicDouble longitude;
+
+    private Boolean iswifi;
+    private String CacheFileName = "cache.txt";
 
     DAO<LocationDataRecord> mDAO;
 
@@ -168,9 +179,17 @@ public class LocationStreamGenerator extends AndroidStreamGenerator<LocationData
         // also post an event.
         EventBus.getDefault().post(locationDataRecord);
         try {
-            mDAO.add(locationDataRecord);
-            Log.d(TAG, "updateStream returning true");
-            return true;
+            iswifi = Wifi.isWifi(mApplicationContext);
+            if (iswifi) {
+                mDAO.add(locationDataRecord);
+                Cache.Upload(mApplicationContext, CacheFileName, mDAO); //Upload the local data to Firebase
+                Log.d(TAG, "updateStream returning true");
+                return true;
+            }
+            else {
+                Cache.WriteCache(mApplicationContext, CacheFileName, locationDataRecord); //Record the local Data
+                return true;
+            }
         } catch (DAOException e) {
             e.printStackTrace();
             return false;
