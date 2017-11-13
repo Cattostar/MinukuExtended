@@ -78,25 +78,6 @@ public class LocationDataRecordDAO implements DAO<LocationDataRecord> {
                 .child(new SimpleDateFormat("MMddyyyy").format(new Date()).toString());
         locationListRef.push().setValue((LocationDataRecord) entity);
 
-        DatabaseReference connectedRef = FirebaseDatabase.getInstance().getReference(".info/connected");
-        connectedRef.addValueEventListener(new com.google.firebase.database.ValueEventListener() {
-            @Override
-            public void onDataChange(com.google.firebase.database.DataSnapshot dataSnapshot) {
-                boolean connected = dataSnapshot.getValue(Boolean.class);
-                if (connected) {
-                    android.util.Log.d("zsc","connected");
-                } else {
-                    android.util.Log.d("zsc","not connected");
-                    cacheData.saveRecord(entity);
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                android.util.Log.d("zsc","Listener was cancelled");
-            }
-        });
-
     }
 
     @Override
