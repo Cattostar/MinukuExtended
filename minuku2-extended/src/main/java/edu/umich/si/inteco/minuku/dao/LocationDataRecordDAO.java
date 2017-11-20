@@ -28,6 +28,9 @@ import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -56,7 +59,7 @@ public class LocationDataRecordDAO implements DAO<LocationDataRecord> {
     private String TAG = "LocationDataRecordDAO";
     private String myUserEmail;
     private UUID uuID;
-
+    private CacheData cacheData = new CacheData();
     public LocationDataRecordDAO() {
         myUserEmail = UserPreferences.getInstance().getPreference(Constants.KEY_ENCODED_EMAIL);
     }
@@ -67,13 +70,14 @@ public class LocationDataRecordDAO implements DAO<LocationDataRecord> {
     }
 
     @Override
-    public void add(LocationDataRecord entity) throws DAOException {
+    public void add(final LocationDataRecord entity) throws DAOException {
         Log.d(TAG, "Adding location data record.");
         String firebaseUrlForLocation = Constants.getInstance().getFirebaseUrlForLocation();
         Firebase locationListRef = new Firebase(firebaseUrlForLocation)
                 .child(myUserEmail)
                 .child(new SimpleDateFormat("MMddyyyy").format(new Date()).toString());
         locationListRef.push().setValue((LocationDataRecord) entity);
+
     }
 
     @Override
